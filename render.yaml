@@ -1,0 +1,24 @@
+# Configuração do Render — leia automaticamente quando o repositório for conectado.
+# Documentação: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: suporte-loving-bot
+    runtime: python
+    plan: free
+    region: oregon  # mais barato/estável no plano grátis
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    autoDeploy: true
+    envVars:
+      # Defina os dois secrets abaixo no painel do Render (Environment).
+      # Não comite nenhum dos dois no GitHub.
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Modelo padrão (pode ser alterado se quiser)
+      - key: ANTHROPIC_MODEL
+        value: claude-haiku-4-5-20251001
+      - key: PYTHON_VERSION
+        value: "3.11.9"
