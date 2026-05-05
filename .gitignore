@@ -1,0 +1,15 @@
+# Nunca commitar variáveis sensíveis
+.env
+.env.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
