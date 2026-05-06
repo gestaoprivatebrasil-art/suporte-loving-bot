@@ -9,10 +9,8 @@ COMO FUNCIONA
 1. O bot carrega a base de conhecimento de `knowledge_base.md` (políticas, FAQ, etc.)
 2. Quando o cliente envia mensagem, o Claude responde com base APENAS nessa base
 3. Se a dúvida for resolvida pela base → o bot responde e encerra cordialmente
-4. Se NÃO for resolvida (cancelamento, reembolso, bug, conta etc.) → o Claude
-   coleta nome, e-mail e detalhes do problema durante a conversa, e usa a
-   ferramenta `escalate_to_human`. Nesse momento o bot mostra UM ÚNICO BOTÃO
-   "Abrir e-mail" — todo o resumo já vai dentro do mailto, sem aparecer no chat.
+4. Se NÃO for resolvida (ou se o cliente pedir humano) → o bot informa o e-mail
+   de suporte e o prazo de retorno, sem coletar dados nem mostrar botão.
 
 VARIÁVEIS DE AMBIENTE
 ---------------------
@@ -26,10 +24,9 @@ WEBHOOK_SECRET      (opcional)    Token secreto para validar requisições do Te
 
 import logging
 import os
-from urllib.parse import quote
 
 from anthropic import Anthropic
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -43,6 +40,7 @@ from telegram.ext import (
 # ---------------------------------------------------------------------------
 
 SUPPORT_EMAIL = "lovingsuporte@gmail.com"
+RESPONSE_SLA = "1 a 2 dias úteis"
 BOT_NAME = "Suporte Loving"
 MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 MAX_HISTORY_TURNS = 20  # quantas mensagens manter por usuário (evita estourar contexto)
@@ -72,26 +70,49 @@ KNOWLEDGE_BASE = load_knowledge_base()
 
 SYSTEM_PROMPT = f"""Você é o assistente virtual do **{BOT_NAME}**, fazendo pré-atendimento humanizado em português brasileiro.
 
-# SEU PAPEL
+# FLUXO PADRÃO
 
-1. Cumprimentar o cliente com empatia, em frases curtas e tom acolhedor.
-2. Entender a dúvida ou problema dele.
-3. Tentar RESOLVER usando APENAS as informações da Base de Conhecimento abaixo.
-4. Se a base de conhecimento responde a dúvida → responda diretamente, com clareza, e encerre cordialmente.
-5. Se a base NÃO resolve, OU se o caso exige ação humana (cancelamento, reembolso,
-   bug técnico, problema de conta/pagamento, dúvida fora do escopo da base, ou cliente pedindo atendente humano) → você precisa:
-     a) Conversar com o cliente para entender o problema em detalhes
-     b) Coletar **nome completo** e **e-mail**
-     c) Quando tiver tudo, chamar a ferramenta `escalate_to_human` com os dados estruturados
+1. **Cumprimentar** o cliente com empatia, em frases curtas e tom acolhedor.
+2. **Entender** a dúvida ou problema do cliente — pergunte com calma o que ele precisa.
+3. **Tentar RESOLVER** usando APENAS as informações da Base de Conhecimento abaixo.
+4. Se a base de conhecimento responde → responda diretamente, com clareza, e encerre cordialmente oferecendo "se precisar de mais alguma coisa, é só me chamar 🙂".
 
-# REGRAS IMPORTANTES
+# QUANDO PRECISAR ESCALAR PARA HUMANO
 
-- Tom humano, gentil, sem formalidade exagerada. Frases curtas. No máximo 1 emoji por mensagem.
+Você precisa escalar para humano nestes casos:
+- A base de conhecimento não cobre o assunto (ex: saque, reembolso, cobrança específica, bug técnico)
+- O caso exige ação manual da equipe (cancelar conta, alterar dados sensíveis, reembolsar)
+- O cliente pediu explicitamente para falar com atendente humano
+
+**O fluxo de escalada tem DUAS ETAPAS — você deve seguir as duas, nunca pular nenhuma:**
+
+## ETAPA 1 — CONFIRMAÇÃO
+
+Antes de passar o e-mail, você precisa CONFIRMAR com o cliente sobre qual assunto ele quer atendimento humano. O objetivo é deixar claro pra ele que você entendeu o caso. Faça assim:
+
+> "Perfeito[, NOME se ele tiver dito]! Só deixa eu confirmar pra te encaminhar direitinho: você gostaria de falar com um atendente humano sobre **[assunto resumido em 1-3 palavras]**, certo? É isso mesmo?"
+
+Use o primeiro nome do cliente APENAS se ele tiver mencionado naturalmente durante a conversa. NUNCA peça o nome dele — se ele não disse, é só não usar.
+
+NÃO peça e-mail. NÃO peça telefone. NÃO peça nenhum dado.
+
+Aguarde a resposta do cliente.
+
+## ETAPA 2 — RESPOSTA FINAL (depois que ele confirmar com sim/correto/isso/etc.)
+
+Quando o cliente confirmar, dê a resposta padrão abaixo, adaptando o tom mas mantendo o conteúdo:
+
+> "Então[, NOME], olha só: o nosso atendimento humanizado é feito pelo e-mail **{SUPPORT_EMAIL}**, e damos de {RESPONSE_SLA} para retorno. É só mandar um e-mail por lá explicando o seu caso de [assunto] que a equipe vai te ajudar com calma. Tudo bem? 💙"
+
+Depois disso, encerre cordialmente. Se ele perguntar mais coisas sobre o mesmo assunto, reforce gentilmente que o caminho é pelo e-mail.
+
+# REGRAS GERAIS
+
+- Tom humano, gentil, próximo (nunca "prezado(a)"). Frases curtas. No máximo 1 emoji por mensagem.
 - NUNCA invente informações que não estão na base de conhecimento.
-- NÃO peça nome e e-mail logo de cara — só quando ficar claro que o caso precisa ser escalado.
-- Se o cliente disser que é urgente ou crítico, escale imediatamente (urgency = Alta).
-- Em respostas resolvidas pela base, ofereça no fim "se precisar de mais alguma coisa, é só me chamar".
-- Se a pergunta for totalmente fora do escopo (não é sobre a Loving), explique gentilmente que você só pode ajudar com assuntos da Loving.
+- NUNCA peça dados pessoais do cliente (nome, e-mail, telefone, CPF, etc.). Se ele dizer espontaneamente, ok usar o primeiro nome em respostas, mas nunca solicitar.
+- Se a pergunta for fora do escopo (não é sobre a Loving), explique gentilmente e siga o mesmo fluxo de escalada (confirmar → e-mail).
+- O retorno SEMPRE é pelo e-mail — nunca prometa retorno pelo Telegram.
 
 # BASE DE CONHECIMENTO
 
@@ -99,68 +120,6 @@ SYSTEM_PROMPT = f"""Você é o assistente virtual do **{BOT_NAME}**, fazendo pr�
 
 # FIM DA BASE DE CONHECIMENTO
 """
-
-ESCALATE_TOOL = {
-    "name": "escalate_to_human",
-    "description": (
-        "Encaminha o cliente para a equipe humana de suporte por e-mail. "
-        "Use SOMENTE quando: a base de conhecimento não resolveu a questão, OU "
-        "o cliente pediu atendente humano, OU o caso exige ação manual "
-        "(cancelamento, reembolso, bug, problema de conta/pagamento). "
-        "Antes de chamar, você precisa ter conversado o suficiente para ter "
-        "nome, e-mail e descrição clara do problema."
-    ),
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "name": {
-                "type": "string",
-                "description": "Nome completo do cliente",
-            },
-            "email": {
-                "type": "string",
-                "description": "E-mail do cliente para retorno",
-            },
-            "title": {
-                "type": "string",
-                "description": "Título curto do problema (até 60 caracteres)",
-            },
-            "summary": {
-                "type": "string",
-                "description": "Resumo objetivo do problema em 1 a 2 frases",
-            },
-            "full_description": {
-                "type": "string",
-                "description": "Descrição completa nas palavras do cliente, juntando o que ele disse durante a conversa",
-            },
-            "category": {
-                "type": "string",
-                "enum": [
-                    "Acesso/Login",
-                    "Pagamento/Cobrança",
-                    "Bug ou Erro Técnico",
-                    "Dúvida sobre Uso",
-                    "Cancelamento/Reembolso",
-                    "Sugestão",
-                    "Outro",
-                ],
-            },
-            "urgency": {
-                "type": "string",
-                "enum": ["Baixa", "Média", "Alta"],
-            },
-        },
-        "required": [
-            "name",
-            "email",
-            "title",
-            "summary",
-            "full_description",
-            "category",
-            "urgency",
-        ],
-    },
-}
 
 
 # ---------------------------------------------------------------------------
@@ -178,27 +137,6 @@ def trim_history(history: list) -> list:
     if len(history) > MAX_HISTORY_TURNS * 2:
         return history[-MAX_HISTORY_TURNS * 2:]
     return history
-
-
-def build_email_body(data: dict) -> str:
-    return "\n".join([
-        "=== PRÉ-ATENDIMENTO SUPORTE LOVING ===",
-        "",
-        f"Nome: {data['name']}",
-        f"E-mail do cliente: {data['email']}",
-        f"Motivo: {data['title']}",
-        f"Categoria: {data['category']}",
-        f"Urgência: {data['urgency']}",
-        "",
-        "----- Descrição completa -----",
-        data["full_description"],
-        "",
-        "----- Resumo automático -----",
-        data["summary"],
-        "",
-        "----- Origem -----",
-        "Atendimento iniciado via bot do Telegram + IA Anthropic.",
-    ])
 
 
 # ---------------------------------------------------------------------------
@@ -247,7 +185,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     "cache_control": {"type": "ephemeral"},
                 }
             ],
-            tools=[ESCALATE_TOOL],
             messages=history,
         )
     except Exception:
@@ -258,18 +195,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         return
 
-    # Separa texto e tool_use da resposta
+    # Extrai o texto de resposta
     text_parts: list[str] = []
-    tool_use_block = None
     for block in response.content:
         if block.type == "text" and block.text.strip():
             text_parts.append(block.text.strip())
-        elif block.type == "tool_use" and block.name == "escalate_to_human":
-            tool_use_block = block
 
     reply_text = "\n\n".join(text_parts).strip()
 
-    # Salva o turno do assistente no histórico (formato cru aceito pela API)
+    # Salva o turno do assistente no histórico
     history.append(
         {
             "role": "assistant",
@@ -277,52 +211,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         }
     )
 
-    if tool_use_block is not None:
-        # Caso de escalada → mostra SOMENTE o botão de e-mail
-        data = tool_use_block.input
-        body = build_email_body(data)
-        subject = f"[Suporte] {data.get('title', 'Solicitação')}"
-        mailto = (
-            f"mailto:{SUPPORT_EMAIL}"
-            f"?subject={quote(subject)}"
-            f"&body={quote(body)}"
-        )
-        keyboard = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("📧 Abrir e-mail e enviar", url=mailto)]]
-        )
-
-        intro = reply_text or (
-            "Tudo certo! Já organizei seu atendimento. "
-            "Toque no botão abaixo — ele abre seu app de e-mail com tudo pronto, "
-            "é só apertar enviar. Nossa equipe te responde em breve. 💙"
-        )
-        await update.message.reply_text(intro, reply_markup=keyboard)
-
-        # Devolve o resultado da ferramenta pro Claude (mantém o histórico válido)
-        history.append(
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": tool_use_block.id,
-                        "content": (
-                            "Ticket apresentado ao cliente. "
-                            "Botão de e-mail exibido. Encerrar a conversa cordialmente "
-                            "se ele falar de novo, a menos que abra um caso novo."
-                        ),
-                    }
-                ],
-            }
-        )
+    if reply_text:
+        await update.message.reply_text(reply_text, parse_mode="Markdown")
     else:
-        # Resposta normal de texto
-        if reply_text:
-            await update.message.reply_text(reply_text)
-        else:
-            await update.message.reply_text(
-                "Pode me contar um pouquinho mais? Quero entender direito pra te ajudar. 🙂"
-            )
+        await update.message.reply_text(
+            "Pode me contar um pouquinho mais? Quero entender direito pra te ajudar. 🙂"
+        )
 
 
 # ---------------------------------------------------------------------------
