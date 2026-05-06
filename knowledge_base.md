@@ -10,12 +10,10 @@
 
 ## Sobre a Loving
 
-A Loving é uma plataforma de [DESCREVA O QUE A LOVING FAZ EM 1 OU 2 FRASES,
-ex: "ajuda casais a se reconectarem através de jogos, conversas guiadas e
-desafios diários".]
+A Love Tradding é uma corretora de investimentos consolidada no mercado financeiro e contamos com mais de 10 mil investidores que buscam uma corretora sólida, idônea e transparente em todos os processos.
 
-**Site oficial:** https://exemplo.com.br
-**Horário de atendimento humano:** Segunda a sexta, das 9h às 18h
+**Site oficial:** https://lovetradding.com/login
+**Horário de atendimento humano:** Segunda a sexta, das 9h às 18h.
 **Canal de suporte:** lovingsuporte@gmail.com
 
 ---
@@ -48,20 +46,38 @@ taxa de cancelamento.
 Acesse a tela de login, toque em "Esqueci minha senha" e siga o e-mail que
 chega em alguns minutos. Se não receber, confira a caixa de spam.
 
-### Posso usar a Loving em mais de um celular?
-Sim! Sua assinatura libera o uso em até 2 dispositivos com o mesmo login.
+### Posso usar a Love tradding em mais de um celular?
+Sim! liberamos o uso em até 2 dispositivos com o mesmo login.
 
-### Aceitam quais formas de pagamento?
-Cartão de crédito (Visa, Master, Elo, Amex), Pix e boleto bancário.
+### Quais formas de depósito?
+ Pix
+ Criptomeda.
 
-### O app funciona offline?
-Algumas funções funcionam offline (jogos baixados). Conteúdo novo requer internet.
+## Saques
 
-### Como atualizo meus dados de pagamento?
-Configurações → Pagamento → Atualizar cartão.
+### Como solicitar um saque?
+Acesse sua conta → menu **Carteira** → **Solicitar saque**.
+Informe o valor desejado e a conta bancária cadastrada.
 
-[Adicione quantas perguntas quiser. Quanto mais o bot souber, menos atendimentos
-chegam para a equipe humana.]
+### Qual o valor mínimo?
+USD 50 por dia.
+
+### Qual o valor máximo?
+USD 500 por dia.
+
+### Quanto tempo demora o saque?
+Até 2 dias úteis, pois passa pelo setor anti-fraude e pelo setor financeiro para efetuar o pagamento, justifica-se esse processo com os dois dias.
+
+### Tem taxa?
+Não cobramos taxa de saque para clientes ativos. 
+
+### Posso sacar para conta de terceiros?
+Não. O saque é apenas para conta de mesma titularidade do CPF cadastrado.
+
+### Meu saque atrasou, e agora?
+Se passou de 2 dias úteis e o valor não caiu, isso precisa ser verificado
+manualmente pela equipe — encaminhe pelo e-mail lovingsuporte@gmail.com
+informando data e valor.
 
 ---
 
